@@ -3,6 +3,7 @@ import torch.nn as nn
 
 from torch.nn.parallel import DistributedDataParallel
 device_ids = [0]
+device = torch.device('cuda')
 
 
 def load_stylegan2(ckpt_dir, channel_multiplier=2):
@@ -29,7 +30,7 @@ def load_stylegan2(ckpt_dir, channel_multiplier=2):
     return g_ema
 
 
-def load_encoder(ckpt_dir, encoder_type='fs'):
+def load_encoder(ckpt_dir, encoder_type='fs', recon_idx=10):
 
     from argparse import Namespace
 
@@ -37,7 +38,7 @@ def load_encoder(ckpt_dir, encoder_type='fs'):
     
     if encoder_type == 'fs':
         import os
-        encoder_opts, encoder_config = set_encoder_args(os.getcwd(), ckpt_dir)
+        encoder_opts, encoder_config = set_encoder_args(os.getcwd(), ckpt_dir, recon_idx)
         trainer = load_fs_encoder(encoder_opts, encoder_config)
         print(">>> Loading done ------------------ \n")
         return trainer
@@ -65,16 +66,28 @@ def load_flownet(ckpt_dir, mode="sky"):
     print(">>> Loading flownet-pix2pixhd...")
     
     from models.img2flow.pix2pixHD_model import InferenceModel
-    model = InferenceModel()
-    opt = flownet_options(ckpt_dir, flownet_mode=mode)
+    sky_model = None
+    fluid_model = None
     
-    model.initialize(opt)
-    model = model.eval().cuda()
-    model = nn.DataParallel(model, device_ids=device_ids)
-    
+    if (mode == "sky") or (mode == "sky+fluid"):
+        sky_model = InferenceModel()
+        opt = flownet_options(ckpt_dir, flownet_mode="sky")
+        
+        sky_model.initialize(opt)
+        sky_model = sky_model.eval().cuda()
+        sky_model = nn.DataParallel(sky_model, device_ids=device_ids)
+        
+    if (mode == "fluid") or (mode == "sky+fluid"):
+        fluid_model = InferenceModel()
+        opt = flownet_options(ckpt_dir, flownet_mode="fluid")
+        
+        fluid_model.initialize(opt)
+        fluid_model = fluid_model.eval().cuda()
+        fluid_model = nn.DataParallel(fluid_model, device_ids=device_ids)
+        
     print(">>> Loading done ------------------ \n")
     
-    return model
+    return sky_model, fluid_model
 
 
 def load_datasetgan(ckpt_dir, n_model=10, numpy_class=3):
@@ -83,7 +96,6 @@ def load_datasetgan(ckpt_dir, n_model=10, numpy_class=3):
     
     device_ids = [0]
     from models.DatasetGAN.classifier import pixel_classifier
-    # ckpt_dir = "./pretrained_models/sky_fluid_1024_fs"
     ckpt_dir = "./pretrained_models/datasetgan"
     
     classifier_list = []

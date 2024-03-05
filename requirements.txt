@@ -1,0 +1,4 @@
+mediapy
+cupy-cuda116
+py-lz4framed
+lpips

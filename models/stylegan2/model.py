@@ -655,8 +655,7 @@ class Generator(nn.Module):
                 out = conv2(out, latent[:,i+1], noise=noise2)
                 
                 if is_random and out.size() != feature.size():
-                    skip = to_rgb(out, latent[:, i+2], skip)
-                    
+                    skip = to_rgb(out, latent[:, i+2], skip)      
                     
             else:
                 
@@ -686,11 +685,11 @@ class Generator(nn.Module):
                     
                     
                 if (i == warp_feature_idx) or (i+1 == warp_feature_idx):
-                    skip = to_rgb(out_, latent[:,i+2], skip=None, gen=False)
+                    skip = to_rgb(out_, latent[:,i+2], skip=None)
                 
                 elif i > warp_feature_idx:
                     out_ = warp_one_level(out, flow, idx, n_frames)
-                    skip = to_rgb(out_, latent[:,i+2], skip=skip, gen=False)
+                    skip = to_rgb(out_, latent[:,i+2], skip=skip)
                     
             i += 2
             image = skip
