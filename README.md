@@ -1,4 +1,4 @@
-# StyleCineGAN: Landscape Cinemagraph Generation using a <br> Pre-trained StyleGAN (CVPR 2024)
+# StyleCineGAN: Landscape Cinemagraph Generation using a Pre-trained StyleGAN (CVPR 2024)
 
 ### [**Paper**](https://arxiv.org/abs/) | [**Project Page**](https://jeolpyeoni.github.io/stylecinegan_project/)
 
