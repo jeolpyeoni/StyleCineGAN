@@ -38,7 +38,7 @@ Run main.py as the following example:
 python main.py --img_path ./samples/0002268 --save_dir ./results
 ```
 
-To test the code with your own data, please place the data as below:
+To test the method with your own data, please place the data as below:
 ```
 $IMG_PATH$
     └── $FILE_NAME$
