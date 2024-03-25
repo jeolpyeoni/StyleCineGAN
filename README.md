@@ -1,6 +1,6 @@
 # StyleCineGAN: Landscape Cinemagraph Generation using a Pre-trained StyleGAN (CVPR 2024)
 
-### [**Paper**]([https://arxiv.org/abs/](https://arxiv.org/abs/2403.14186)) | [**Project Page**](https://jeolpyeoni.github.io/stylecinegan_project/)
+### [**Paper**](https://arxiv.org/abs/2403.14186) | [**Project Page**](https://jeolpyeoni.github.io/stylecinegan_project/)
 
 This is the official PyTorch implementation of "StyleCineGAN: Landscape Cinemagraph Generation using a Pre-trained StyleGAN" (CVPR2024).
 
