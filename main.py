@@ -15,7 +15,7 @@ device = torch.device('cuda')
 
 
 from option import Options
-from utils.model_utils import load_encoder, load_flownet, load_stylegan2, load_datasetgan
+from utils.model_utils import load_encoder, load_stylegan2
 from utils.ip_utils import read_image, resize_tensor, to_numpy, to_tensor, make_sg2_features, make_sg2_features_fs
 from utils.utils import clip_img, gan_inversion, predict_mask
 from utils.flow_utils import z_score_filtering, flow2img
@@ -36,13 +36,11 @@ if __name__ == "__main__":
     # load models ------------------------------------------------------------------------------------
     sg2      = load_stylegan2(opts.sg2_ckpt)
     encoder  = load_encoder(opts.encoder_ckpt, encoder_type=opts.encoder_type, recon_idx=opts.recon_feature_idx).to(device)
-    img2flow_sky, img2flow_fluid = load_flownet(opts.flownet_dir, mode=opts.flownet_mode)
-    datasetgan = load_datasetgan(opts.datasetgan_dir)
-
+    
 
     # read images ------------------------------------------------------------------------------------
-    torch_input = read_image(opts.img_path, dim=1024, is_square=True, return_tensor=False)
-    basename_input = os.path.basename(opts.img_path).split('.')[0]
+    basename_input = (opts.img_path).split("/")[-1]
+    torch_input = read_image(f"{opts.img_path}/{basename_input}.png", dim=1024, is_square=True, return_tensor=False)
     
     if opts.style_path:
         torch_style = read_image(opts.style_path, is_square=True, return_tensor=True)
@@ -77,64 +75,23 @@ if __name__ == "__main__":
         mp.write_image(f"{opts.save_dir}/{basename_input}_recon.png", img_list)
     
     
-    # estimate flow ----------------------------------------------------------------------------------
-    print("\n>>> Predicting Flow...")   
-    with torch.no_grad():
-        
-        if (opts.flownet_mode == "sky") or (opts.flownet_mode == "sky+fluid"):
-            sky_flow_init = img2flow_sky.module.inference(resize_tensor(torch_input, [512, 512]), None)
-            sky_flow_z = z_score_filtering(sky_flow_init)
-            
-            # speed normalization
-            mag = sky_flow_z.norm(dim=1, keepdim=True)
-            sky_flow_z = sky_flow_z / mag.abs().max()
-            mag = mag.cpu().detach().numpy()
-            mag[mag == 0] = np.nan
-            mean = np.nanmean(mag)
-            multiplier = 3 / mean
-            sky_flow_z *= multiplier
-            
-        if (opts.flownet_mode == "fluid") or (opts.flownet_mode == "sky+fluid"):
-            fluid_flow_init = img2flow_fluid.module.inference(resize_tensor(torch_input, [512, 512]), None)
-            fluid_flow_z = z_score_filtering(fluid_flow_init)
-            
-            # speed normalization
-            mag = fluid_flow_z.norm(dim=1, keepdim=True)
-            fluid_flow_z = fluid_flow_z / mag.abs().max()
-
-    if (opts.flownet_mode == "sky"):
-        flow_z = sky_flow_z
-    elif (opts.flownet_mode == "fluid"):
-        flow_z = fluid_flow_z
-    elif (opts.flownet_mode == "sky+fluid"):
-        flow_z = sky_flow_z + fluid_flow_z
-
+    # load flow ----------------------------------------------------------------------------------
+    print(f"\n>>> Loading Flow...")
+    flow = np.load(f"{opts.img_path}/{basename_input}_motion.npy")
+    flow = torch.from_numpy(flow).to(device)
     print(">>> Done -------------------------- \n")
         
     
-    # estimate mask ----------------------------------------------------------------------------------
-    print("\n>>> Predicting Mask...")    
-    sg2_features = make_sg2_features_fs(sg2, latent, feature)
-    
-    if not opts.mode == "no_seg":
-        mask, init_mask_image, mask_image = predict_mask(opts, basename_input, datasetgan, sg2_features)
-        flow = flow_z * mask
-        
-    else:
-        flow = flow_z
-        mask = flow.detach().cpu().numpy()
-        mask = np.where(mask != 0., 1, 0)[:,0,:,:]
-        mask = torch.from_numpy(mask).cuda()
-        
+    # load mask ----------------------------------------------------------------------------------
+    print("\n>>> Loading Mask...")
+    mask = mp.read_image(f"{opts.img_path}/{basename_input}_mask.png")
+    mask = mp.resize_image(mask, (512, 512))[:,:,0] / 255
+    mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(0).to(device)
+    flow *= mask
     print(">>> Done -------------------------- \n")
         
     
-    # visualize mask prediction results --------------------------------------------------------------
-    if (opts.vis == "True") and (opts.mode != "no_seg"):
-        mp.write_image(f"{opts.save_dir}/{basename_input}_mask.png", mask_image)
-        mp.write_image(f"{opts.save_dir}/{basename_input}_mask_init.png", init_mask_image)
-    
-    # visualize flow prediction results---------------------------------------------------------------
+    # visualize optical flow---------------------------------------------------------------
     if opts.vis == "True":
         flows = [flow2img(flow[0].permute(1, 2, 0).cpu().detach().numpy())]
         flows = np.concatenate(flows, axis=1)
@@ -180,7 +137,7 @@ if __name__ == "__main__":
                                                         is_random=False
                                               )
             
-            up_mask = resize_feature(mask.unsqueeze(0).float(), 1024)
+            up_mask = resize_feature(mask.float(), 1024)
             up_flow = resize_flow(flow, 1024)
             
             if opts.image_inpainting:

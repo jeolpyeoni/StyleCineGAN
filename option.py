@@ -28,7 +28,7 @@ class Options():
 
         
         ### set save dir
-        self.parser.add_argument("--save_dir", type=str, help="image save directory")
+        self.parser.add_argument("--save_dir", type=str, default="./results", help="image save directory")
 
 
         ### cinemagraph
