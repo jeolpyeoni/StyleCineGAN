@@ -58,12 +58,12 @@ The code for this project was build using the codebase of [StyleGAN2](https://gi
 
 ## Citation
 ``` bibtex
-@misc{choi2024stylecinegan,
-        title={StyleCineGAN: Landscape Cinemagraph Generation using a Pre-trained StyleGAN}, 
-        author={Jongwoo Choi and Kwanggyoon Seo and Amirsaman Ashtari and Junyong Noh},
-        year={2024},
-        eprint={2403.14186},
-        archivePrefix={arXiv},
-        primaryClass={cs.CV}
-  }
+@InProceedings{Choi_2024_CVPR,
+    author    = {Choi, Jongwoo and Seo, Kwanggyoon and Ashtari, Amirsaman and Noh, Junyong},
+    title     = {StyleCineGAN: Landscape Cinemagraph Generation using a Pre-trained StyleGAN},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2024},
+    pages     = {7872-7881}
+}
 ```
